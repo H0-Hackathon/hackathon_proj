@@ -1,0 +1,301 @@
+# ============================================
+# Python Backend (FastAPI)
+# ============================================
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# PyInstaller
+*.manifest
+*.spec
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.pytest_cache/
+.mypy_cache/
+.dmypy.json
+dmypy.json
+.pyre/
+.pytype/
+
+# Virtual Environment
+.venv/
+venv/
+ENV/
+env/
+venv.bak/
+venv_backup/
+
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# IPython
+profile_default/
+ipython_config.py
+
+# pyenv
+.python-version
+
+# ============================================
+# Node.js Frontend (React + Vite)
+# ============================================
+# Dependencies
+node_modules/
+jspm_packages/
+
+# Production build
+frontend/dist/
+frontend/build/
+dist/
+build/
+
+# Vite
+.vite/
+*.local
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Package manager lock files
+# Note: package-lock.json is ignored per original config.
+# If you need to keep it, comment out the line below.
+package-lock.json
+# yarn.lock
+# pnpm-lock.yaml
+
+# ============================================
+# Environment & Configuration
+# ============================================
+.env
+.env.local
+.env.*.local
+.env.development
+.env.production
+.env.test
+*.env
+
+# ============================================
+# Databases & Vector Store
+# ============================================
+# Note: pre-built knowledge-base vector DB files should be committed to git:
+# - backend/data/vectordb/ (pre-built knowledge base, kept in git)
+# - backend/scripts/data/vectordb/ (pre-built knowledge base, kept in git)
+
+# Ignore runtime-generated database files
+*.db
+*.sqlite
+*.sqlite3
+
+# But keep pre-built knowledge base files (required project data)
+!backend/data/vectordb/**
+!backend/scripts/data/vectordb/**
+
+# Ignore database directories elsewhere
+chroma_db/
+backend/chroma_db/
+
+# PostgreSQL
+postgres_data/
+
+# ============================================
+# Uploads & User Data
+# ============================================
+uploads/
+backend/uploads/
+backend/data/uploads/
+data/uploads/
+
+# ============================================
+# Logs
+# ============================================
+*.log
+logs/
+backend/logs/
+backend/*.log
+*.log.*
+
+# ============================================
+# Docker
+# ============================================
+docker-compose.override.yml
+.dockerignore
+*.dockerignore
+
+# ============================================
+# AI/ML Specific
+# ============================================
+# Sentence Transformers cache
+.cache/
+sentence_transformers/
+transformers_cache/
+.huggingface/
+
+# Model files (if large local models are downloaded)
+*.pt
+*.pth
+*.onnx
+*.h5
+*.pb
+*.tflite
+checkpoints/
+*.pkl
+*.pickle
+
+# Ollama models (if stored inside this project)
+.ollama/
+
+# ============================================
+# IDEs & Editors
+# ============================================
+# VSCode
+.vscode/
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+*.code-workspace
+
+# PyCharm
+.idea/
+*.iml
+*.iws
+*.ipr
+
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
+
+# Vim
+*.swp
+*.swo
+*~
+.*.swp
+.*.swo
+
+# Emacs
+\#*\#
+.\#*
+*~
+
+# Visual Studio
+.vs/
+
+# ============================================
+# OS Specific
+# ============================================
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon
+._*
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+.AppleDB
+.AppleDesktop
+Network Trash Folder
+Temporary Items
+.apdisk
+
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+*.stackdump
+[Dd]esktop.ini
+$RECYCLE.BIN/
+*.cab
+*.msi
+*.msix
+*.msm
+*.msp
+*.lnk
+
+# Linux
+.fuse_hidden*
+.directory
+.Trash-*
+.nfs*
+
+# ============================================
+# Temporary Files
+# ============================================
+*.tmp
+*.temp
+*.bak
+*.backup
+
+# ============================================
+# Project Specific
+# ============================================
+# Test data
+test_data/
+*.test
+
+# Docs build output
+docs/_build/
+site/
+
+# Migration scripts (if generated temporarily)
+# backend/migrate_*.py (commented out — migrate_handoffs.py etc. already exist)
+
+# Alembic
+# Uncomment to ignore auto-generated migration files:
+# backend/alembic/versions/*.py
+# (generally recommended to keep migration files in git)
+
+# Ignore all markdown files except README.md
+*.md
+!README.md
+
+
+
+.txt
