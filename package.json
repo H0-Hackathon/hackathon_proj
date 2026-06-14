@@ -5,6 +5,7 @@
     "@deck.gl/react": "^9.3.4",
     "deck.gl": "^9.3.4",
     "maplibre-gl": "^5.24.0",
+    "react": "^19.2.7",
     "react-map-gl": "^8.1.1"
   }
 }
