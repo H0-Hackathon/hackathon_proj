@@ -10,19 +10,6 @@ import { DemoPage } from './pages/DemoPage';
 import { AdminPage } from './pages/AdminPage';
 import { SuppliersPage } from './pages/SuppliersPage';
 
-/**
- * CoastGuard — App Router
- *
- * Routes:
- *   /            → redirect to /dashboard
- *   /dashboard   → main alert dashboard (sidebar + alert list + map)
- *   /demo        → demo coming soon placeholder
- *   /admin       → admin panel (internal use)
- *
- * Auth removed entirely. business_id=1 is hardcoded for Phase 1.
- * Phase 2 will add onboarding flow and per-business data.
- */
-
 function App() {
   return (
     <ConfigProvider locale={enUS}>
@@ -31,14 +18,9 @@ function App() {
         <Routes>
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
           <Route path="/dashboard" element={<AlertsDashboard />} />
-<<<<<<< Updated upstream
-=======
-          <Route path="/alerts" element={<AlertsPage />} />
           <Route path="/suppliers" element={<SuppliersPage />} />
->>>>>>> Stashed changes
           <Route path="/demo" element={<DemoPage />} />
           <Route path="/admin" element={<AdminPage />} />
-          {/* Catch-all: redirect unknown routes to dashboard */}
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Routes>
       </BrowserRouter>

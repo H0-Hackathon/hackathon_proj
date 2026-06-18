@@ -2,7 +2,7 @@
 CoastGuard — TariffAlert CRUD routes.
 
 Endpoints:
-  GET /api/v2/alerts              list alerts for a customer
+  GET /api/v2/alerts              list alerts for the active customer (max 10, newest first)
   GET /api/v2/alerts/{id}         get single alert
   PUT /api/v2/alerts/{id}/dismiss mark alert dismissed
   PUT /api/v2/alerts/{id}/resolve mark alert resolved
@@ -16,16 +16,27 @@ from typing import List
 from database import get_db
 from models import TariffAlert
 from schemas import TariffAlertResponse
+from config import get_settings
 
 router = APIRouter(prefix="/api/v2", tags=["Alerts"])
+settings = get_settings()
+
+ALERT_DISPLAY_CAP = 10
 
 
 @router.get("/alerts", response_model=List[TariffAlertResponse])
-def list_alerts(customer_id: int, db: Session = Depends(get_db)):
+def list_alerts(customer_id: int = None, db: Session = Depends(get_db)):
+    """
+    Returns the most recent alerts for the active customer, capped at 10.
+    customer_id param is optional — defaults to ACTIVE_CUSTOMER_ID from config.
+    Once Clerk auth is wired, this will use the auth token instead.
+    """
+    cid = customer_id or settings.active_customer_id
     return (
         db.query(TariffAlert)
-        .filter(TariffAlert.customer_id == customer_id)
+        .filter(TariffAlert.customer_id == cid)
         .order_by(TariffAlert.created_at.desc())
+        .limit(ALERT_DISPLAY_CAP)
         .all()
     )
 
