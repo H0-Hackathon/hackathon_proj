@@ -20,13 +20,12 @@ const ConversationDetail = () => {
       const response = await chatAPI.getConversations(customerId);
       setConversations(response.data);
       
-      // Fetch customer info
       const customersResponse = await chatAPI.getCustomers();
       const customerData = customersResponse.data.find(c => c.id === parseInt(customerId));
       setCustomer(customerData);
     } catch (error) {
-      console.error('Failed to fetch conversations:', error);
-      antMessage.error('Failed to fetch conversations');
+      console.error('Failed to load conversation:', error);
+      antMessage.error('Failed to load conversation');
     } finally {
       setLoading(false);
     }
@@ -47,11 +46,11 @@ const ConversationDetail = () => {
   const getCategoryTag = (category, priority) => {
     const config = {
       HIGH_VALUE: { color: 'red', text: 'High Value' },
-      NORMAL: { color: 'green', text: 'Normal' },
+      NORMAL: { color: 'green', text: 'Standard' },
       LOW_VALUE: { color: 'default', text: 'Low Value' }
     };
     const { color, text } = config[category] || config.NORMAL;
-    return <Tag color={color}>{text} (Priority: {priority})</Tag>;
+    return <Tag color={color}>{text} ({priority})</Tag>;
   };
 
   return (
@@ -65,7 +64,7 @@ const ConversationDetail = () => {
       </Button>
 
       {customer && (
-        <Card title="Customer Info" style={{ marginBottom: 24 }}>
+        <Card title="Customer Information" style={{ marginBottom: 24 }}>
           <Descriptions>
             <Descriptions.Item label="Name">
               <strong>{customer.name}</strong>
@@ -75,7 +74,7 @@ const ConversationDetail = () => {
             <Descriptions.Item label="Category">
               {getCategoryTag(customer.category, customer.priority_score)}
             </Descriptions.Item>
-            <Descriptions.Item label="Created At (UTC)">
+            <Descriptions.Item label="Created (UTC)">
               {formatUTCDateTimeCN(customer.created_at)}
             </Descriptions.Item>
           </Descriptions>
@@ -84,12 +83,12 @@ const ConversationDetail = () => {
 
       <Card title="Conversation History">
         {conversations.length === 0 ? (
-          <Empty description="No conversation records" />
+          <Empty description="No conversation history" />
         ) : (
           conversations.map((conversation) => (
             <div key={conversation.id} style={{ marginBottom: 32 }}>
               <h4>
-                Session #{conversation.id}
+                Session #{conversation.id} 
                 <span style={{ fontSize: 14, color: '#8c8c8c', marginLeft: 16 }}>
                   {formatUTCDateTimeCN(conversation.created_at)}
                 </span>

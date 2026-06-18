@@ -3,6 +3,8 @@ CoastGuard Supply Chain Monitor — FastAPI Application
 """
 
 import logging
+import threading
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -14,6 +16,8 @@ from api.v2.supplier_routes import router as supplier_router
 from api.v2.alert_routes import router as alert_router
 from api.v2.monitor_routes import router as monitor_router
 from api.v2.disruption_routes import router as disruption_router
+from api.v2.geo_routes import router as geo_router
+from api.v2.news_routes import router as news_router
 
 settings = get_settings()
 
@@ -48,12 +52,39 @@ app.include_router(supplier_router)
 app.include_router(alert_router)
 app.include_router(monitor_router)
 app.include_router(disruption_router)
+app.include_router(geo_router)
+app.include_router(news_router)
+
+
+# ── Article cache refresh ─────────────────────────────────────────────────────
+
+def _run_rss_scrape() -> None:
+    """Scrape all RSS feeds and populate the in-memory article cache."""
+    try:
+        from collectors.monitor import scrape_rss_feeds
+        from core import article_cache
+        logger.info("Starting RSS feed scrape...")
+        articles = scrape_rss_feeds()
+        article_cache.refresh(articles)
+        logger.info("Article cache populated — %d articles", len(articles))
+    except Exception as exc:
+        logger.error("RSS scrape failed: %s", exc)
 
 
 @app.on_event("startup")
 def _on_startup():
     from core.scheduler import start_scheduler
     start_scheduler()
+
+    # Scrape RSS feeds in a background thread so the server is immediately
+    # ready to accept requests. /monitor/run calls that arrive before the
+    # scrape finishes fall back to the in-memory cache (empty → JSONL datasets).
+    threading.Thread(target=_run_rss_scrape, daemon=True, name="rss-startup-scrape").start()
+
+    # Warm the news-ticker cache in the background so the first /api/v2/news
+    # request is instant.
+    from services import news_feed
+    threading.Thread(target=news_feed.prefetch, daemon=True, name="news-prefetch").start()
 
 
 @app.on_event("shutdown")
@@ -62,20 +93,45 @@ def _on_shutdown():
     stop_scheduler()
 
 
+# ── Manual cache refresh endpoint ─────────────────────────────────────────────
+
+@app.post("/api/v2/monitor/collect", tags=["Monitor"])
+def refresh_article_cache():
+    """
+    Trigger a fresh scrape of all configured RSS feeds and replace the
+    in-memory article cache. Called by the "Refresh News" button in the UI.
+    Runs synchronously (blocks until complete, typically 20-40 seconds).
+    """
+    from collectors.monitor import scrape_rss_feeds
+    from core import article_cache
+    articles = scrape_rss_feeds()
+    article_cache.refresh(articles)
+    return {
+        "status": "ok",
+        "articles_collected": len(articles),
+        "last_scraped": article_cache.get_last_scraped(),
+    }
+
+
+# ── Health checks ─────────────────────────────────────────────────────────────
+
 @app.get("/", tags=["Health"])
 async def health_check():
+    from core import article_cache
     return JSONResponse({
         "status": "ok",
         "app": "CoastGuard Supply Chain Monitor",
         "version": "0.1.0",
         "mock_mode": settings.use_mock_llm,
         "database": settings.database_url,
+        "article_cache": article_cache.status(),
     })
 
 
 @app.get("/api/health", tags=["Health"])
 async def api_health():
     from database import check_db_connection
+    from core import article_cache
     db_status = check_db_connection()
     return {
         "status": "ok",
@@ -84,4 +140,5 @@ async def api_health():
         "gemini_key_set": bool(settings.gemini_api_key),
         "usitc_key_set": bool(settings.usitc_api_key),
         "database": db_status,
+        "article_cache": article_cache.status(),
     }

@@ -124,7 +124,7 @@ package-lock.json
 # - backend/data/vectordb/ (pre-built knowledge base, kept in git)
 # - backend/scripts/data/vectordb/ (pre-built knowledge base, kept in git)
 
-# Ignore runtime-generated database files
+
 *.db
 *.sqlite
 *.sqlite3
@@ -133,7 +133,7 @@ package-lock.json
 !backend/data/vectordb/**
 !backend/scripts/data/vectordb/**
 
-# Ignore database directories elsewhere
+
 chroma_db/
 backend/chroma_db/
 
@@ -277,26 +277,23 @@ $RECYCLE.BIN/
 # ============================================
 # Project Specific
 # ============================================
-# Test data
+
 test_data/
 *.test
 
-# Docs build output
+
 docs/_build/
 site/
 
-# Migration scripts (if generated temporarily)
-# backend/migrate_*.py (commented out — migrate_handoffs.py etc. already exist)
+
+
 
 # Alembic
-# Uncomment to ignore auto-generated migration files:
 # backend/alembic/versions/*.py
 # (generally recommended to keep migration files)
 
 # Ignore all markdown files except README.md
 *.md
 !README.md
-
-
 
 .txt
