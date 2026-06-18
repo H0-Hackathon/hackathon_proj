@@ -58,22 +58,16 @@ class CrewAIOrchestrator:
     def run_monitor(
         self,
         customer_id: int,
-        hs_code: str,
-        supplier_country: str,
         db: Optional[Session] = None,
     ) -> dict:
         """
-        Run the 5-agent tariff monitoring pipeline.
+        Run the 5-agent tariff monitoring pipeline for the given customer.
+        hs_code and supplier_country are derived automatically from the customer's BusinessProfile.
 
         Returns:
             run_id, customer_id, alerts_generated, agent_outputs
         """
-        return self._monitor.run(
-            customer_id=customer_id,
-            hs_code=hs_code,
-            supplier_country=supplier_country,
-            db=db,
-        )
+        return self._monitor.run(customer_id=customer_id, db=db)
 
     def check_compliance(self, hs_code: str, alternatives: list) -> dict:
         """
