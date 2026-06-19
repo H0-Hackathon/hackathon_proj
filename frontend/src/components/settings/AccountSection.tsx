@@ -1,0 +1,356 @@
+import React, { useState } from 'react';
+import { UserCircle2, ShieldCheck, Key, LogOut, Trash2, Copy, Check } from 'lucide-react';
+import { SectionHeader, SettingsCard, FieldRow, TextInput, SelectInput, SaveButton } from './SettingsShared';
+
+interface Props { onSave: () => void; saving: boolean; }
+
+const ROLES = [
+  { id: 'cso',      label: 'Chief Supply Officer',    badge: 'Exec' },
+  { id: 'manager',  label: 'Supply Chain Manager',     badge: 'Mgmt' },
+  { id: 'analyst',  label: 'Trade Risk Analyst',       badge: 'IC' },
+  { id: 'ops',      label: 'Operations Coordinator',   badge: 'Ops' },
+  { id: 'finance',  label: 'Finance / Treasury',       badge: 'Fin' },
+  { id: 'admin',    label: 'Platform Administrator',   badge: 'Admin' },
+] as const;
+
+export const AccountSection: React.FC<Props> = ({ onSave, saving }) => {
+  const [name, setName]           = useState('Samrita Mehta');
+  const [email, setEmail]         = useState('samrita.mehta@meridian-imports.com');
+  const [role, setRole]           = useState('analyst');
+  const [phone, setPhone]         = useState('+1 415 555 0192');
+  const [timezone, setTimezone]   = useState('America/Los_Angeles');
+  const [twoFa, setTwoFa]         = useState(true);
+  const [copied, setCopied]       = useState(false);
+
+  const apiKey = 'cg_live_xK3mP9vQ2nR7sT1wL8eA5bF0';
+
+  const copyKey = () => {
+    navigator.clipboard.writeText(apiKey).catch(() => {});
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const selectedRole = ROLES.find(r => r.id === role);
+
+  return (
+    <div>
+      <SectionHeader
+        icon={UserCircle2}
+        title="Account"
+        subtitle="Manage your personal profile, authentication settings, and API access credentials."
+      />
+
+      {/* Avatar + quick info */}
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 20,
+        padding: '20px 24px',
+        background: 'linear-gradient(135deg, rgba(245,158,11,0.07) 0%, rgba(255,255,255,0.02) 100%)',
+        border: '1px solid rgba(245,158,11,0.12)',
+        borderRadius: 12,
+        marginBottom: 20,
+      }}>
+        <div style={{
+          width: 60, height: 60, borderRadius: '50%',
+          background: 'linear-gradient(135deg, rgba(245,158,11,0.3) 0%, rgba(245,158,11,0.1) 100%)',
+          border: '2px solid rgba(245,158,11,0.35)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          fontSize: 22, fontWeight: 700, color: '#f59e0b',
+          flexShrink: 0,
+        }}>
+          {name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
+        </div>
+        <div style={{ flex: 1 }}>
+          <div style={{ fontSize: 16, fontWeight: 700, color: '#e8e3d8', letterSpacing: '-0.3px' }}>
+            {name || 'Your Name'}
+          </div>
+          <div style={{ fontSize: 12, color: 'rgba(140,130,100,0.6)', marginTop: 2 }}>
+            {email}
+          </div>
+          <div style={{ marginTop: 6, display: 'flex', gap: 6, alignItems: 'center' }}>
+            {selectedRole && (
+              <span style={{
+                fontSize: 10,
+                fontWeight: 600,
+                background: 'rgba(245,158,11,0.12)',
+                border: '1px solid rgba(245,158,11,0.25)',
+                color: '#f59e0b',
+                padding: '2px 7px',
+                borderRadius: 4,
+                letterSpacing: '0.06em',
+              }}>
+                {selectedRole.badge}
+              </span>
+            )}
+            <span style={{ fontSize: 11, color: 'rgba(140,130,100,0.5)' }}>
+              {selectedRole?.label ?? '—'}
+            </span>
+          </div>
+        </div>
+        {twoFa && (
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 5,
+            fontSize: 10.5,
+            color: '#10b981',
+            background: 'rgba(16,185,129,0.08)',
+            border: '1px solid rgba(16,185,129,0.2)',
+            padding: '4px 9px',
+            borderRadius: 5,
+          }}>
+            <ShieldCheck size={11} />
+            2FA Active
+          </div>
+        )}
+      </div>
+
+      {/* Profile */}
+      <SettingsCard
+        title="Personal Information"
+        description="Name and contact details used in report headers and notification delivery."
+      >
+        <FieldRow label="Full Name">
+          <TextInput value={name} onChange={e => setName(e.target.value)} placeholder="Your full name" />
+        </FieldRow>
+        <FieldRow label="Email Address">
+          <TextInput type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="you@company.com" />
+        </FieldRow>
+        <FieldRow label="Phone (optional)" hint="For SMS critical alerts">
+          <TextInput value={phone} onChange={e => setPhone(e.target.value)} placeholder="+1 555 000 0000" />
+        </FieldRow>
+        <FieldRow label="Timezone" hint="Used for daily brief delivery">
+          <SelectInput value={timezone} onChange={e => setTimezone(e.target.value)}>
+            <option value="America/New_York">Eastern (UTC−5/4)</option>
+            <option value="America/Chicago">Central (UTC−6/5)</option>
+            <option value="America/Denver">Mountain (UTC−7/6)</option>
+            <option value="America/Los_Angeles">Pacific (UTC−8/7)</option>
+            <option value="Europe/London">London (UTC+0/1)</option>
+            <option value="Europe/Berlin">Berlin (UTC+1/2)</option>
+            <option value="Asia/Singapore">Singapore (UTC+8)</option>
+            <option value="Asia/Tokyo">Tokyo (UTC+9)</option>
+          </SelectInput>
+        </FieldRow>
+      </SettingsCard>
+
+      {/* Role */}
+      <SettingsCard
+        title="Platform Role"
+        description="Your role determines the default dashboard layout, alert focus areas, and AI report framing."
+        impact="Personalises AI insights and recommended actions"
+      >
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 8 }}>
+          {ROLES.map(({ id, label, badge }) => {
+            const isSelected = role === id;
+            return (
+              <button
+                key={id}
+                onClick={() => setRole(id)}
+                style={{
+                  padding: '10px 14px',
+                  borderRadius: 8,
+                  border: `1px solid ${isSelected ? 'rgba(245,158,11,0.35)' : 'rgba(255,255,255,0.07)'}`,
+                  background: isSelected ? 'rgba(245,158,11,0.08)' : 'rgba(255,255,255,0.02)',
+                  cursor: 'pointer',
+                  textAlign: 'left',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 10,
+                  transition: 'all 0.15s',
+                  fontFamily: 'Inter, sans-serif',
+                }}
+              >
+                <span style={{
+                  fontSize: 9.5,
+                  fontWeight: 700,
+                  background: isSelected ? 'rgba(245,158,11,0.15)' : 'rgba(255,255,255,0.07)',
+                  color: isSelected ? '#f59e0b' : 'rgba(160,150,120,0.5)',
+                  padding: '2px 6px',
+                  borderRadius: 4,
+                  letterSpacing: '0.06em',
+                  flexShrink: 0,
+                }}>
+                  {badge}
+                </span>
+                <span style={{
+                  fontSize: 12,
+                  fontWeight: isSelected ? 600 : 400,
+                  color: isSelected ? '#e8e3d8' : 'rgba(140,130,100,0.6)',
+                }}>
+                  {label}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </SettingsCard>
+
+      {/* Security */}
+      <SettingsCard
+        title="Security"
+        description="Authentication and access controls for your CoastGuard account."
+      >
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '10px 14px',
+          background: twoFa ? 'rgba(16,185,129,0.05)' : 'rgba(239,68,68,0.05)',
+          border: `1px solid ${twoFa ? 'rgba(16,185,129,0.15)' : 'rgba(239,68,68,0.15)'}`,
+          borderRadius: 8,
+          marginBottom: 12,
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <ShieldCheck size={15} color={twoFa ? '#10b981' : '#ef4444'} />
+            <div>
+              <div style={{ fontSize: 12.5, fontWeight: 500, color: '#e8e3d8' }}>
+                Two-Factor Authentication
+              </div>
+              <div style={{ fontSize: 11, color: 'rgba(120,110,80,0.5)' }}>
+                {twoFa ? 'Authenticator app configured' : 'Not configured — account at risk'}
+              </div>
+            </div>
+          </div>
+          <button
+            onClick={() => setTwoFa(!twoFa)}
+            style={{
+              fontSize: 11,
+              fontWeight: 600,
+              padding: '5px 12px',
+              borderRadius: 6,
+              border: `1px solid ${twoFa ? 'rgba(16,185,129,0.25)' : 'rgba(245,158,11,0.25)'}`,
+              background: twoFa ? 'rgba(16,185,129,0.08)' : 'rgba(245,158,11,0.08)',
+              color: twoFa ? '#10b981' : '#f59e0b',
+              cursor: 'pointer',
+              fontFamily: 'Inter, sans-serif',
+            }}
+          >
+            {twoFa ? 'Manage' : 'Enable'}
+          </button>
+        </div>
+
+        <button
+          style={{
+            width: '100%',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 9,
+            padding: '10px 14px',
+            background: 'rgba(255,255,255,0.02)',
+            border: '1px solid rgba(255,255,255,0.07)',
+            borderRadius: 8,
+            color: 'rgba(160,150,120,0.65)',
+            fontSize: 12.5,
+            fontFamily: 'Inter, sans-serif',
+            cursor: 'pointer',
+          }}
+        >
+          <Key size={13} />
+          Change Password
+        </button>
+      </SettingsCard>
+
+      {/* API Key */}
+      <SettingsCard
+        title="API Access"
+        description="Use this key to integrate CoastGuard risk signals with your internal systems or BI tools."
+      >
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 0,
+          borderRadius: 7,
+          overflow: 'hidden',
+          border: '1px solid rgba(255,255,255,0.09)',
+        }}>
+          <div style={{
+            flex: 1,
+            padding: '9px 12px',
+            background: 'rgba(255,255,255,0.03)',
+            color: 'rgba(160,150,120,0.6)',
+            fontSize: 11.5,
+            fontFamily: 'JetBrains Mono, monospace',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+            letterSpacing: '0.05em',
+          }}>
+            {apiKey.slice(0, 14)}{'•'.repeat(12)}
+          </div>
+          <button
+            onClick={copyKey}
+            style={{
+              padding: '9px 14px',
+              background: copied ? 'rgba(16,185,129,0.1)' : 'rgba(245,158,11,0.08)',
+              border: 'none',
+              borderLeft: '1px solid rgba(255,255,255,0.09)',
+              color: copied ? '#10b981' : '#f59e0b',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 5,
+              fontSize: 11.5,
+              fontFamily: 'Inter, sans-serif',
+              fontWeight: 600,
+              transition: 'all 0.15s',
+              flexShrink: 0,
+            }}
+          >
+            {copied ? <><Check size={12} /> Copied!</> : <><Copy size={12} /> Copy Key</>}
+          </button>
+        </div>
+        <p style={{ fontSize: 11, color: 'rgba(120,110,80,0.4)', marginTop: 8, lineHeight: 1.5 }}>
+          Keep this key secret. Regenerating will revoke all existing integrations.
+        </p>
+      </SettingsCard>
+
+      {/* Danger zone */}
+      <div style={{
+        border: '1px solid rgba(239,68,68,0.15)',
+        borderRadius: 12,
+        padding: '16px 20px',
+        background: 'rgba(239,68,68,0.03)',
+      }}>
+        <div style={{ fontSize: 12, fontWeight: 600, color: '#ef4444', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 7 }}>
+          <Trash2 size={13} />
+          Danger Zone
+        </div>
+        <div style={{ display: 'flex', gap: 10 }}>
+          <button style={{
+            flex: 1,
+            padding: '9px 0',
+            borderRadius: 7,
+            background: 'transparent',
+            border: '1px solid rgba(239,68,68,0.2)',
+            color: 'rgba(239,120,120,0.65)',
+            fontSize: 12,
+            fontFamily: 'Inter, sans-serif',
+            cursor: 'pointer',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+          }}>
+            <LogOut size={12} />
+            Sign Out All Devices
+          </button>
+          <button style={{
+            flex: 1,
+            padding: '9px 0',
+            borderRadius: 7,
+            background: 'transparent',
+            border: '1px solid rgba(239,68,68,0.25)',
+            color: 'rgba(239,100,100,0.7)',
+            fontSize: 12,
+            fontFamily: 'Inter, sans-serif',
+            cursor: 'pointer',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+          }}>
+            <Trash2 size={12} />
+            Delete Account
+          </button>
+        </div>
+      </div>
+
+      <SaveButton onSave={onSave} saving={saving} label="Save Account Settings" />
+    </div>
+  );
+};

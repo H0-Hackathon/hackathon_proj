@@ -6,12 +6,14 @@
     "@deck.gl/react": "^9.3.4",
     "antd": "^6.4.4",
     "deck.gl": "^9.3.4",
+    "lucide-react": "^1.21.0",
     "maplibre-gl": "^5.24.0",
     "react": "^19.2.7",
     "react-globe.gl": "^2.38.0",
     "react-map-gl": "^8.1.1",
     "react-markdown": "^10.1.0",
     "react-router-dom": "^7.17.0",
+    "sonner": "^2.0.7",
     "three": "^0.184.0"
   }
 }
