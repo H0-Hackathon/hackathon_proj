@@ -51,46 +51,44 @@ export const EventFeed: React.FC = () => {
 
   return (
     <div style={{
-      background: 'rgba(20,20,18,0.9)',
-      borderTop: '1px solid rgba(245,158,11,0.08)',
+      background: 'rgba(10,10,12,0.97)',
+      borderTop: '1px solid rgba(255,255,255,0.04)',
       height: '100%',
       display: 'flex',
       flexDirection: 'column',
     }}>
       {/* Header */}
       <div style={{
-        padding: '7px 16px',
+        padding: '6px 16px',
         display: 'flex',
         alignItems: 'center',
         gap: 8,
         flexShrink: 0,
-        borderBottom: '1px solid rgba(245,158,11,0.06)',
+        borderBottom: '1px solid rgba(255,255,255,0.04)',
       }}>
-        <BarChart2 size={11} color="#f59e0b" />
+        <BarChart2 size={10} color="#f59e0b" />
         <span style={{
-          fontSize: 10, fontWeight: 700,
+          fontSize: 9.5, fontWeight: 700,
           letterSpacing: '0.1em', textTransform: 'uppercase',
-          color: 'rgba(200,185,140,0.7)',
+          color: 'rgba(180,165,120,0.65)',
         }}>
           Global Trade Intelligence Feed
         </span>
-        <div style={{
-          marginLeft: 'auto',
-          display: 'flex', alignItems: 'center', gap: 5,
-        }}>
+        <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 5 }}>
           <div style={{
             width: 5, height: 5, borderRadius: '50%',
             background: '#dc2626',
+            boxShadow: '0 0 5px #dc262650',
             animation: 'pulse-dot 1s ease-in-out infinite',
           }} />
-          <span style={{ fontSize: 9, color: '#dc2626', fontWeight: 700 }}>LIVE</span>
-          <span style={{ fontSize: 9, color: 'rgba(130,120,90,0.6)', marginLeft: 6 }}>
+          <span style={{ fontSize: 9, color: '#fca5a5', fontWeight: 700, letterSpacing: '0.06em' }}>LIVE</span>
+          <span style={{ fontSize: 9, color: 'rgba(110,100,75,0.6)', marginLeft: 4 }}>
             {MOCK_EVENTS.length} events
           </span>
         </div>
       </div>
 
-      {/* Scrollable event ticker */}
+      {/* Horizontally scrollable event row */}
       <div
         ref={scrollRef}
         style={{
@@ -106,25 +104,26 @@ export const EventFeed: React.FC = () => {
         <div style={{
           display: 'flex',
           alignItems: 'center',
-          padding: '0 10px',
+          padding: '0 12px',
           gap: 0,
           height: '100%',
         }}>
           {MOCK_EVENTS.map((event, i) => {
             const catColor = CATEGORY_COLORS[event.category];
-            const severityColor =
+            const severityDot =
               event.severity === 'critical' ? '#dc2626' :
               event.severity === 'high'     ? '#ea580c' :
-              event.severity === 'medium'   ? '#d97706' : '#6b7280';
+              event.severity === 'medium'   ? '#d97706' : 'rgba(100,90,70,0.4)';
+            const impactPositive = event.impact?.startsWith('+');
 
             return (
               <React.Fragment key={event.id}>
                 {i > 0 && (
                   <div style={{
-                    width: 1, height: 22,
-                    background: 'rgba(245,158,11,0.08)',
+                    width: 1, height: 18,
+                    background: 'rgba(255,255,255,0.05)',
                     flexShrink: 0,
-                    margin: '0 14px',
+                    margin: '0 16px',
                   }} />
                 )}
                 <div style={{
@@ -132,51 +131,67 @@ export const EventFeed: React.FC = () => {
                   alignItems: 'center',
                   gap: 7,
                   flexShrink: 0,
-                  maxWidth: 380,
+                  maxWidth: 400,
+                  padding: '2px 0',
                 }}>
+                  {/* Time */}
                   <span style={{
                     fontSize: 9,
-                    color: 'rgba(130,120,90,0.7)',
+                    color: 'rgba(110,100,75,0.65)',
                     fontFamily: 'JetBrains Mono, monospace',
                     flexShrink: 0,
+                    letterSpacing: '0.02em',
                   }}>
                     {event.time}
                   </span>
+
+                  {/* Category tag */}
                   <span style={{
-                    fontSize: 9, fontWeight: 700, letterSpacing: '0.05em',
+                    fontSize: 8.5, fontWeight: 700, letterSpacing: '0.06em',
                     color: catColor,
-                    background: `${catColor}12`,
-                    border: `1px solid ${catColor}22`,
+                    background: `${catColor}10`,
+                    border: `1px solid ${catColor}25`,
                     borderRadius: 3,
-                    padding: '1px 5px',
+                    padding: '1.5px 5px',
                     flexShrink: 0,
                   }}>
                     {CATEGORY_LABELS[event.category]}
                   </span>
-                  {event.severity && (
+
+                  {/* Severity dot */}
+                  {event.severity && event.severity !== 'low' && (
                     <div style={{
-                      width: 5, height: 5, borderRadius: '50%',
-                      background: severityColor, flexShrink: 0,
+                      width: 4, height: 4, borderRadius: '50%',
+                      background: severityDot,
+                      boxShadow: `0 0 4px ${severityDot}`,
+                      flexShrink: 0,
                     }} />
                   )}
+
+                  {/* Message */}
                   <span style={{
-                    fontSize: 11, color: 'rgba(220,210,180,0.85)',
+                    fontSize: 11,
+                    color: 'rgba(210,200,175,0.88)',
                     whiteSpace: 'nowrap',
                     overflow: 'hidden',
                     textOverflow: 'ellipsis',
+                    letterSpacing: '-0.1px',
                   }}>
                     {event.message}
                   </span>
+
+                  {/* Impact badge */}
                   {event.impact && (
                     <span style={{
-                      fontSize: 10, fontWeight: 700,
-                      color: event.impact.startsWith('+') ? '#dc2626' : '#10b981',
+                      fontSize: 9.5, fontWeight: 700,
+                      color: impactPositive ? '#fca5a5' : '#6ee7b7',
                       fontFamily: 'JetBrains Mono, monospace',
                       flexShrink: 0,
-                      background: event.impact.startsWith('+') ? 'rgba(220,38,38,0.1)' : 'rgba(16,185,129,0.1)',
-                      border: `1px solid ${event.impact.startsWith('+') ? 'rgba(220,38,38,0.2)' : 'rgba(16,185,129,0.2)'}`,
+                      background: impactPositive ? 'rgba(220,38,38,0.08)' : 'rgba(16,185,129,0.08)',
+                      border: `1px solid ${impactPositive ? 'rgba(220,38,38,0.18)' : 'rgba(16,185,129,0.18)'}`,
                       borderRadius: 3,
-                      padding: '1px 6px',
+                      padding: '1.5px 6px',
+                      letterSpacing: '0.02em',
                     }}>
                       {event.impact}
                     </span>

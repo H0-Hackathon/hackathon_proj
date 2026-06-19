@@ -296,7 +296,7 @@ export const AlertsDashboard: React.FC = () => {
       label: 'Trade Exposure',
       value: fmtMoney(totalExposure),
       sub: `${active.length} active alert${active.length !== 1 ? 's' : ''}`,
-      icon: DollarSign, color: '#dc2626', bg: 'rgba(220,38,38,0.07)', border: 'rgba(220,38,38,0.18)',
+      icon: DollarSign, color: '#dc2626', bg: 'rgba(220,38,38,0.06)', border: 'rgba(220,38,38,0.15)',
     },
     {
       key: 'proposed',
@@ -304,23 +304,23 @@ export const AlertsDashboard: React.FC = () => {
       label: 'Proposed Suppliers',
       value: String(proposedSuppliersCount),
       sub: 'before compliance review',
-      icon: Users, color: '#ea580c', bg: 'rgba(234,88,12,0.07)', border: 'rgba(234,88,12,0.18)',
+      icon: Users, color: '#ea580c', bg: 'rgba(234,88,12,0.06)', border: 'rgba(234,88,12,0.15)',
     },
     {
       key: 'events',
       available: active.length > 0,
-      label: 'Critical Trade Events',
+      label: 'Critical Events',
       value: String(criticalEvents),
       sub: `${active.length} active alert${active.length !== 1 ? 's' : ''}`,
-      icon: AlertTriangle, color: '#f59e0b', bg: 'rgba(245,158,11,0.07)', border: 'rgba(245,158,11,0.18)',
+      icon: AlertTriangle, color: '#f59e0b', bg: 'rgba(245,158,11,0.06)', border: 'rgba(245,158,11,0.15)',
     },
     {
       key: 'countries',
       available: suppliers.length > 0,
-      label: 'Countries Monitored',
+      label: 'Countries',
       value: String(countryCount),
       sub: `${suppliers.length} supplier${suppliers.length !== 1 ? 's' : ''}`,
-      icon: MapPin, color: '#10b981', bg: 'rgba(16,185,129,0.07)', border: 'rgba(16,185,129,0.18)',
+      icon: MapPin, color: '#10b981', bg: 'rgba(16,185,129,0.06)', border: 'rgba(16,185,129,0.15)',
     },
   ].filter((c) => c.available);
 
@@ -341,82 +341,99 @@ export const AlertsDashboard: React.FC = () => {
       background: 'var(--bg)',
       overflow: 'hidden',
     }}>
-      {/* ── Top Hero Bar ── */}
+
+      {/* ── Command Bar ──────────────────────────────────────────────────── */}
       <div style={{
-        padding: '12px 24px',
-        borderBottom: '1px solid rgba(245,158,11,0.08)',
+        height: 52,
+        flexShrink: 0,
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
-        flexShrink: 0,
-        background: 'rgba(14,14,10,0.95)',
-        backdropFilter: 'blur(12px)',
+        padding: '0 20px 0 24px',
+        borderBottom: '1px solid rgba(255,255,255,0.045)',
+        background: 'rgba(10,10,12,0.97)',
+        backdropFilter: 'blur(16px)',
+        zIndex: 30,
       }}>
-        <div>
-          <h1 style={{
-            fontSize: 17,
-            fontWeight: 800,
-            color: '#e8e3d8',
-            letterSpacing: '-0.3px',
-            fontFamily: 'Inter, sans-serif',
-            lineHeight: 1,
-            marginBottom: 4,
-          }}>
-            Trade Risk Intelligence
-          </h1>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 14, fontSize: 11, color: 'rgba(130,120,90,0.8)' }}>
-            <span style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-              <span style={{
-                width: 5, height: 5, borderRadius: '50%',
-                background: '#10b981',
-                boxShadow: '0 0 5px #10b981',
-                display: 'inline-block',
-                animation: 'pulse-dot 2s ease-in-out infinite',
-              }} />
-              Monitoring {suppliers.length} supplier{suppliers.length !== 1 ? 's' : ''} across {countryCount} countr{countryCount !== 1 ? 'ies' : 'y'}
-            </span>
-            <span style={{ color: 'rgba(100,90,60,0.4)' }}>|</span>
-            <span style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 10 }}>
-              Updated {syncTime}
-            </span>
-            {critical > 0 && (
-              <>
-                <span style={{ color: 'rgba(100,90,60,0.4)' }}>|</span>
-                <span style={{
-                  display: 'flex', alignItems: 'center', gap: 4,
-                  color: '#dc2626', fontWeight: 600,
-                }}>
-                  <AlertTriangle size={11} />
-                  {critical} critical alert{critical !== 1 ? 's' : ''}
-                </span>
-              </>
-            )}
+        {/* Left: title + status */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
+          <div>
+            <div style={{
+              fontSize: 13,
+              fontWeight: 700,
+              color: '#e8e3d8',
+              letterSpacing: '-0.2px',
+              lineHeight: 1,
+            }}>
+              Trade Risk Intelligence
+            </div>
+            <div style={{
+              fontSize: 10,
+              color: 'rgba(120,110,80,0.75)',
+              marginTop: 3,
+              fontFamily: 'JetBrains Mono, monospace',
+              letterSpacing: '0.02em',
+            }}>
+              {suppliers.length > 0
+                ? `${suppliers.length} suppliers · ${countryCount} countries · synced ${syncTime}`
+                : `synced ${syncTime}`}
+            </div>
           </div>
+
+          {/* Live pulse */}
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 6,
+            padding: '4px 10px',
+            background: 'rgba(16,185,129,0.07)',
+            border: '1px solid rgba(16,185,129,0.15)',
+            borderRadius: 5,
+          }}>
+            <span style={{
+              width: 5, height: 5, borderRadius: '50%',
+              background: '#10b981',
+              boxShadow: '0 0 6px #10b981',
+              display: 'inline-block',
+              animation: 'pulse-dot 2s ease-in-out infinite',
+            }} />
+            <span style={{ fontSize: 9.5, fontWeight: 700, letterSpacing: '0.08em', color: '#6ee7b7' }}>
+              LIVE
+            </span>
+          </div>
+
+          {/* Critical alert badge */}
+          {critical > 0 && (
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 5,
+              padding: '4px 10px',
+              background: 'rgba(220,38,38,0.08)',
+              border: '1px solid rgba(220,38,38,0.2)',
+              borderRadius: 5,
+            }}>
+              <AlertTriangle size={10} color="#dc2626" />
+              <span style={{ fontSize: 9.5, fontWeight: 700, color: '#fca5a5', letterSpacing: '0.06em' }}>
+                {critical} CRITICAL
+              </span>
+            </div>
+          )}
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <div style={{
-            display: 'flex', alignItems: 'center', gap: 6,
-            background: 'rgba(16,185,129,0.07)',
-            border: '1px solid rgba(16,185,129,0.18)',
-            borderRadius: 6,
-            padding: '5px 12px',
-            fontSize: 10,
-            color: '#6ee7b7',
-            fontWeight: 600,
-          }}>
-            <Activity size={10} color="#10b981" />
-            SYSTEMS NOMINAL
-          </div>
-
+        {/* Right: actions */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <button
             className="btn-accent"
             onClick={handleRunMonitor}
             disabled={isRunning}
-            style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11 }}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 6,
+              fontSize: 11, padding: '6px 14px', borderRadius: 6,
+            }}
           >
             <RefreshCw
-              size={12}
+              size={11}
               style={{ animation: isRunning ? 'spin 1s linear infinite' : 'none' }}
             />
             {isRunning ? 'Scanning…' : 'Run Analysis'}
@@ -424,48 +441,89 @@ export const AlertsDashboard: React.FC = () => {
         </div>
       </div>
 
-      {/* ── Main Body ── */}
+      {/* ── Body: Globe (centre) + Panel (right) ─────────────────────────── */}
       <div style={{
         flex: 1,
         display: 'grid',
-        gridTemplateColumns: '1fr 276px',
+        gridTemplateColumns: '1fr 288px',
         minHeight: 0,
         overflow: 'hidden',
       }}>
-        {/* ── Centre: Map ── */}
+
+        {/* ── Globe column ────────────────────────────────────────────────── */}
         <div style={{
           display: 'flex',
           flexDirection: 'column',
           minHeight: 0,
           overflow: 'hidden',
+          position: 'relative',
         }}>
-          {/* Map container */}
+
+          {/* Globe fills the entire centre area */}
           <div style={{ flex: 1, position: 'relative', minHeight: 0 }}>
             <TradeGlobe suppliers={tradeGlobeSuppliers} disruptions={disruptions} />
 
-            {/* Layer toggles overlay */}
+            {/* Globe label — top-left */}
             <div style={{
               position: 'absolute',
-              top: 14, right: 14,
-              background: 'rgba(14,14,10,0.88)',
-              backdropFilter: 'blur(12px)',
-              border: '1px solid rgba(245,158,11,0.12)',
+              top: 16,
+              left: 16,
+              zIndex: 20,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 7,
+            }}>
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+                background: 'rgba(8,8,10,0.75)',
+                backdropFilter: 'blur(12px)',
+                border: '1px solid rgba(245,158,11,0.12)',
+                borderRadius: 6,
+                padding: '5px 10px',
+              }}>
+                <Globe size={11} color="#f59e0b" />
+                <span style={{
+                  fontSize: 10,
+                  fontWeight: 700,
+                  letterSpacing: '0.1em',
+                  textTransform: 'uppercase',
+                  color: 'rgba(200,185,140,0.85)',
+                }}>
+                  Live Exposure Map
+                </span>
+              </div>
+            </div>
+
+            {/* Layer toggles overlay — top-right */}
+            <div style={{
+              position: 'absolute',
+              top: 14,
+              right: 14,
+              background: 'rgba(8,8,10,0.78)',
+              backdropFilter: 'blur(14px)',
+              border: '1px solid rgba(255,255,255,0.06)',
               borderRadius: 8,
-              padding: '10px 12px',
+              padding: '10px 13px',
               zIndex: 20,
               display: 'flex',
               flexDirection: 'column',
-              gap: 6,
+              gap: 7,
             }}>
               <div style={{
-                fontSize: 9, fontWeight: 700,
-                letterSpacing: '0.1em', textTransform: 'uppercase',
-                color: 'rgba(150,140,100,0.7)',
-                display: 'flex', alignItems: 'center', gap: 5,
-                marginBottom: 2,
+                fontSize: 8.5,
+                fontWeight: 700,
+                letterSpacing: '0.12em',
+                textTransform: 'uppercase',
+                color: 'rgba(130,120,90,0.6)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 5,
+                marginBottom: 1,
               }}>
-                <Layers size={9} color="#f59e0b" />
-                <span>Map Layers</span>
+                <Layers size={9} color="rgba(245,158,11,0.6)" />
+                Layers
               </div>
               {MAP_LAYERS.map((layer) => {
                 const on = activeLayers.has(layer.id);
@@ -474,21 +532,23 @@ export const AlertsDashboard: React.FC = () => {
                     key={layer.id}
                     onClick={() => toggleLayer(layer.id)}
                     style={{
-                      display: 'flex', alignItems: 'center', gap: 7,
+                      display: 'flex', alignItems: 'center', gap: 8,
                       background: 'none', border: 'none', cursor: 'pointer',
-                      padding: '2px 0',
+                      padding: '1px 0',
                     }}
                   >
                     <div style={{
-                      width: 10, height: 10, borderRadius: 2, flexShrink: 0,
-                      background: on ? layer.color : 'rgba(255,255,255,0.06)',
-                      border: `1px solid ${on ? layer.color : 'rgba(255,255,255,0.08)'}`,
-                      transition: 'background 0.15s',
+                      width: 8, height: 8, borderRadius: 2, flexShrink: 0,
+                      background: on ? layer.color : 'rgba(255,255,255,0.05)',
+                      border: `1px solid ${on ? layer.color + '80' : 'rgba(255,255,255,0.08)'}`,
+                      transition: 'background 0.15s, border-color 0.15s',
+                      boxShadow: on ? `0 0 6px ${layer.color}50` : 'none',
                     }} />
                     <span style={{
-                      fontSize: 10.5,
-                      color: on ? '#e8e3d8' : 'rgba(130,120,90,0.6)',
+                      fontSize: 10,
+                      color: on ? 'rgba(232,227,216,0.9)' : 'rgba(100,90,70,0.7)',
                       fontFamily: 'Inter, sans-serif',
+                      transition: 'color 0.15s',
                     }}>
                       {layer.label}
                     </span>
@@ -496,86 +556,127 @@ export const AlertsDashboard: React.FC = () => {
                 );
               })}
             </div>
-
           </div>
 
-          {/* Bottom: live trade/supply-chain news ticker */}
-          <div style={{ height: 56, flexShrink: 0 }}>
+          {/* Live Trade Wire ticker */}
+          <div style={{ height: 52, flexShrink: 0 }}>
             <NewsTicker customerId={ACTIVE_CUSTOMER_ID} lastRunAt={lastRunAt} />
           </div>
         </div>
 
-        {/* ── Right Sidebar ── */}
+        {/* ── Right Intelligence Panel ────────────────────────────────────── */}
         <div style={{
-          borderLeft: '1px solid rgba(245,158,11,0.08)',
+          borderLeft: '1px solid rgba(255,255,255,0.045)',
           display: 'flex',
           flexDirection: 'column',
           overflow: 'hidden',
-          background: 'rgba(14,14,10,0.5)',
+          background: 'rgba(10,10,12,0.92)',
         }}>
-          {/* Intelligence KPI cards — derived from real monitor results;
-              individual cards hide when their underlying data is unavailable. */}
+
+          {/* Panel header */}
+          <div style={{
+            padding: '12px 16px 10px',
+            borderBottom: '1px solid rgba(255,255,255,0.04)',
+            flexShrink: 0,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 6,
+          }}>
+            <Activity size={11} color="#f59e0b" />
+            <span style={{
+              fontSize: 9.5,
+              fontWeight: 700,
+              letterSpacing: '0.12em',
+              textTransform: 'uppercase',
+              color: 'rgba(180,165,120,0.7)',
+            }}>
+              Intelligence Panel
+            </span>
+            {isRunning && (
+              <span style={{
+                marginLeft: 'auto',
+                fontSize: 8.5, fontWeight: 700,
+                color: '#dc2626',
+                letterSpacing: '0.08em',
+                animation: 'pulse-dot 1.2s ease-in-out infinite',
+              }}>
+                RUNNING
+              </span>
+            )}
+          </div>
+
+          {/* KPI metric cards */}
           {kpiCards.length > 0 && (
             <div style={{
               padding: '12px 14px',
-              borderBottom: '1px solid rgba(245,158,11,0.07)',
+              borderBottom: '1px solid rgba(255,255,255,0.04)',
               flexShrink: 0,
             }}>
               <div style={{
-                fontSize: 9, fontWeight: 700, letterSpacing: '0.12em',
-                textTransform: 'uppercase', color: 'rgba(150,140,100,0.55)',
-                marginBottom: 9,
-                display: 'flex', alignItems: 'center', gap: 5,
+                display: 'grid',
+                gridTemplateColumns: '1fr 1fr',
+                gap: 6,
               }}>
-                <Globe size={9} color="#f59e0b" />
-                Trade Intelligence
-              </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 7 }}>
                 {kpiCards.map(({ key, label, value, sub, icon: Icon, color, bg, border }) => (
-                  <div key={key} style={{
-                    background: bg,
-                    border: `1px solid ${border}`,
-                    borderRadius: 8,
-                    padding: '10px 11px',
-                  }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginBottom: 5 }}>
-                      <Icon size={10} color={color} />
-                      <span style={{ fontSize: 8.5, color: 'rgba(150,140,100,0.7)', lineHeight: 1.2 }}>{label}</span>
+                  <div
+                    key={key}
+                    style={{
+                      background: bg,
+                      border: `1px solid ${border}`,
+                      borderRadius: 7,
+                      padding: '9px 11px',
+                      transition: 'border-color 0.2s',
+                    }}
+                  >
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 4,
+                      marginBottom: 6,
+                    }}>
+                      <Icon size={9} color={color} />
+                      <span style={{
+                        fontSize: 8,
+                        fontWeight: 700,
+                        letterSpacing: '0.08em',
+                        textTransform: 'uppercase',
+                        color: 'rgba(130,120,90,0.65)',
+                      }}>
+                        {label}
+                      </span>
                     </div>
                     <div style={{
-                      fontSize: 20, fontWeight: 800,
-                      color, fontVariantNumeric: 'tabular-nums',
-                      lineHeight: 1, marginBottom: 3,
+                      fontSize: 22,
+                      fontWeight: 800,
+                      color,
+                      fontVariantNumeric: 'tabular-nums',
+                      lineHeight: 1,
+                      marginBottom: 3,
+                      letterSpacing: '-0.5px',
                     }}>
                       {value}
                     </div>
-                    <div style={{ fontSize: 9, color: 'rgba(130,120,90,0.7)' }}>{sub}</div>
+                    <div style={{
+                      fontSize: 9,
+                      color: 'rgba(110,100,75,0.8)',
+                    }}>
+                      {sub}
+                    </div>
                   </div>
                 ))}
               </div>
             </div>
           )}
 
-          {/* Analysis Pipeline — live agent debug stream while running, else status */}
+          {/* Agent reasoning chain + debug stream */}
           <div style={{
             flex: 1,
             overflow: 'auto',
-            padding: '12px 14px',
+            padding: '14px 14px 16px',
             scrollbarWidth: 'thin',
-            scrollbarColor: 'rgba(245,158,11,0.1) transparent',
+            scrollbarColor: 'rgba(245,158,11,0.08) transparent',
           }}>
-            <div style={{
-              fontSize: 9, fontWeight: 700, letterSpacing: '0.12em',
-              textTransform: 'uppercase', color: 'rgba(150,140,100,0.55)',
-              marginBottom: 9,
-              display: 'flex', alignItems: 'center', gap: 5,
-            }}>
-              <Activity size={9} color="#f59e0b" />
-              Live Agent Results
-            </div>
-
-            {/* Real agent output: TariffMonitor, ImpactCalculator, and (real
-                LLM mode) AlternativesFinder, ImportCompliance, Adversarial */}
+            {/* Live agent pipeline */}
             <LiveAgentResults
               agents={agentResults}
               agentStatus={agentStatus}
@@ -584,9 +685,9 @@ export const AlertsDashboard: React.FC = () => {
               live={isRunning}
             />
 
-            {/* Raw agent stream (start/done/log events) while a run is in flight */}
+            {/* Raw log stream while a run is in-flight */}
             {debugState && (
-              <div style={{ marginTop: 10 }}>
+              <div style={{ marginTop: 12 }}>
                 <AgentDebugPanel
                   agentStates={debugState.agentStates}
                   logs={debugState.logs}
