@@ -22,7 +22,7 @@ from core.auth import get_current_user
 router = APIRouter(prefix="/api/v2", tags=["Alerts"])
 settings = get_settings()
 
-ALERT_DISPLAY_CAP = 10
+ALERT_DISPLAY_CAP = 20
 
 
 @router.get("/alerts", response_model=List[TariffAlertResponse])
