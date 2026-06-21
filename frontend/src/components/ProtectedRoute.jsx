@@ -45,9 +45,13 @@ export function ProtectedRoute({
     return <Navigate to="/subscription" replace />;
   }
 
-  // Pro-gated route: trial users and "starter" plan users get redirected
-  if (requirePro && subscription?.plan !== 'pro' && subscription?.status !== 'trial') {
-    return <Navigate to="/subscription?upgrade=pro" replace />;
+  // Pro-gated route: only actual pro subscribers get through
+  // trial users, standard plan users, and expired users are all redirected
+  if (requirePro) {
+    const isPro = subscription?.plan === 'pro' && subscription?.status === 'active';
+    if (!isPro) {
+      return <Navigate to="/subscription?upgrade=pro" replace />;
+    }
   }
 
   return <Component {...args} />;

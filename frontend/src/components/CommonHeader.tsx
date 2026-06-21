@@ -11,30 +11,37 @@ import {
   Globe,
   LogOut,
   CreditCard,
+  Lock,
+  Trash2,
 } from 'lucide-react';
 
 const NAV_ITEMS = [
   { label: 'Dashboard',    path: '/dashboard',    icon: LayoutDashboard },
   { label: 'Alerts',       path: '/alerts',       icon: Bell },
-  { label: 'Suppliers',    path: '/suppliers',    icon: Building2 },
+  { label: 'Suppliers',    path: '/suppliers',    icon: Building2, requirePro: true },
   { label: 'Compliance',   path: '/compliance',   icon: ShieldCheck },
   { label: 'Subscription', path: '/subscription', icon: CreditCard },
   { label: 'Settings',     path: '/settings',     icon: Settings },
 ];
 
 const ACTIVE_CUSTOMER_ID = 69;
+const API_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000';
 
 type DbStatus = 'checking' | 'ok' | 'error';
 
 export const CommonHeader: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { user, logout, subscription } = useAuth() as any;
+  const { user, logout, subscription, token } = useAuth() as any;
   const [dbStatus, setDbStatus] = useState<DbStatus>('checking');
   const [dbBackend, setDbBackend] = useState<string>('');
   const [alertCount, setAlertCount] = useState<number | null>(null);
   const [proposedSuppliers, setProposedSuppliers] = useState<number | null>(null);
   const [countdown, setCountdown] = useState<string>('');
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+
+  const isPro = subscription?.plan === 'pro' && subscription?.status === 'active';
 
   useEffect(() => {
     const check = () => {
@@ -214,9 +221,10 @@ export const CommonHeader: React.FC = () => {
         }}>
           Platform
         </div>
-        {NAV_ITEMS.map(({ label, path, icon: Icon }) => {
+        {NAV_ITEMS.map(({ label, path, icon: Icon, requirePro: needsPro }: any) => {
           const isActive = location.pathname === path ||
             (path === '/dashboard' && location.pathname === '/');
+          const isLocked = needsPro && !isPro;
           return (
             <button
               key={label}
@@ -232,7 +240,9 @@ export const CommonHeader: React.FC = () => {
                 fontFamily: 'Inter, sans-serif',
                 fontSize: 12.5,
                 fontWeight: isActive ? 600 : 400,
-                color: isActive ? '#e8e3d8' : 'rgba(160,150,120,0.55)',
+                color: isLocked
+                  ? 'rgba(160,150,120,0.35)'
+                  : isActive ? '#e8e3d8' : 'rgba(160,150,120,0.55)',
                 background: isActive
                   ? 'linear-gradient(90deg, rgba(245,158,11,0.14) 0%, rgba(245,158,11,0.04) 100%)'
                   : 'transparent',
@@ -245,13 +255,13 @@ export const CommonHeader: React.FC = () => {
               onMouseEnter={(e) => {
                 if (!isActive) {
                   (e.currentTarget as HTMLButtonElement).style.background = 'rgba(245,158,11,0.05)';
-                  (e.currentTarget as HTMLButtonElement).style.color = 'rgba(232,227,216,0.85)';
+                  (e.currentTarget as HTMLButtonElement).style.color = isLocked ? 'rgba(232,227,216,0.5)' : 'rgba(232,227,216,0.85)';
                 }
               }}
               onMouseLeave={(e) => {
                 if (!isActive) {
                   (e.currentTarget as HTMLButtonElement).style.background = 'transparent';
-                  (e.currentTarget as HTMLButtonElement).style.color = 'rgba(160,150,120,0.55)';
+                  (e.currentTarget as HTMLButtonElement).style.color = isLocked ? 'rgba(160,150,120,0.35)' : 'rgba(160,150,120,0.55)';
                 }
               }}
             >
@@ -270,6 +280,12 @@ export const CommonHeader: React.FC = () => {
                   textAlign: 'center',
                 }}>
                   {alertCount}
+                </span>
+              )}
+              {isLocked && (
+                <span style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 3 }}>
+                  <Lock size={10} color="rgba(245,158,11,0.5)" />
+                  <span style={{ fontSize: 8, color: 'rgba(245,158,11,0.5)', fontWeight: 700, letterSpacing: '0.05em' }}>PRO</span>
                 </span>
               )}
             </button>
@@ -442,41 +458,114 @@ export const CommonHeader: React.FC = () => {
           padding: '10px 16px 12px',
           borderTop: '1px solid rgba(245,158,11,0.07)',
           marginTop: 4,
-          display: 'flex',
-          alignItems: 'center',
-          gap: 10,
         }}>
-          <div style={{
-            width: 30, height: 30, borderRadius: '50%', flexShrink: 0,
-            background: 'linear-gradient(135deg, #F59E0B, #D97706)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: 12, fontWeight: 800, color: '#0e0e10',
-            fontFamily: 'Inter, sans-serif',
-          }}>
-            {(user.name || user.email || 'U').charAt(0).toUpperCase()}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: showDeleteConfirm ? 8 : 0 }}>
+            <div style={{
+              width: 30, height: 30, borderRadius: '50%', flexShrink: 0,
+              background: 'linear-gradient(135deg, #F59E0B, #D97706)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: 12, fontWeight: 800, color: '#0e0e10',
+              fontFamily: 'Inter, sans-serif',
+            }}>
+              {(user.name || user.email || 'U').charAt(0).toUpperCase()}
+            </div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <p style={{ margin: 0, fontSize: 12, fontWeight: 600, color: '#e8e3d8', fontFamily: 'Inter, sans-serif', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {user.name || user.email || 'User'}
+              </p>
+              <p style={{ margin: 0, fontSize: 10, color: 'rgba(160,150,120,0.5)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {user.email}
+              </p>
+            </div>
+            {/* Delete account */}
+            <button
+              onClick={() => setShowDeleteConfirm(true)}
+              title="Delete account"
+              style={{
+                background: 'transparent', border: 'none', cursor: 'pointer',
+                color: 'rgba(160,150,120,0.4)', padding: 4, borderRadius: 6,
+                display: 'flex', alignItems: 'center', flexShrink: 0,
+                transition: 'color 0.15s',
+              }}
+              onMouseEnter={e => (e.currentTarget.style.color = '#ef4444')}
+              onMouseLeave={e => (e.currentTarget.style.color = 'rgba(160,150,120,0.4)')}
+            >
+              <Trash2 size={13} />
+            </button>
+            {/* Logout */}
+            <button
+              onClick={() => logout()}
+              title="Sign out"
+              style={{
+                background: 'transparent', border: 'none', cursor: 'pointer',
+                color: 'rgba(160,150,120,0.55)', padding: 4, borderRadius: 6,
+                display: 'flex', alignItems: 'center', flexShrink: 0,
+                transition: 'color 0.15s',
+              }}
+              onMouseEnter={e => (e.currentTarget.style.color = '#ef4444')}
+              onMouseLeave={e => (e.currentTarget.style.color = 'rgba(160,150,120,0.55)')}
+            >
+              <LogOut size={15} />
+            </button>
           </div>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <p style={{ margin: 0, fontSize: 12, fontWeight: 600, color: '#e8e3d8', fontFamily: 'Inter, sans-serif', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-              {user.name || user.email || 'User'}
-            </p>
-            <p style={{ margin: 0, fontSize: 10, color: 'rgba(160,150,120,0.5)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-              {user.email}
-            </p>
-          </div>
-          <button
-            onClick={() => logout()}
-            title="Sign out"
-            style={{
-              background: 'transparent', border: 'none', cursor: 'pointer',
-              color: 'rgba(160,150,120,0.55)', padding: 4, borderRadius: 6,
-              display: 'flex', alignItems: 'center', flexShrink: 0,
-              transition: 'color 0.15s',
-            }}
-            onMouseEnter={e => (e.currentTarget.style.color = '#ef4444')}
-            onMouseLeave={e => (e.currentTarget.style.color = 'rgba(160,150,120,0.55)')}
-          >
-            <LogOut size={15} />
-          </button>
+
+          {/* Delete confirmation prompt */}
+          {showDeleteConfirm && (
+            <div style={{
+              background: 'rgba(239,68,68,0.08)',
+              border: '1px solid rgba(239,68,68,0.25)',
+              borderRadius: 7,
+              padding: '10px 12px',
+              fontSize: 11,
+              color: '#fca5a5',
+              fontFamily: 'Inter, sans-serif',
+            }}>
+              <p style={{ margin: '0 0 8px', fontWeight: 600 }}>Delete your account?</p>
+              <p style={{ margin: '0 0 10px', color: 'rgba(255,255,255,0.4)', fontSize: 10 }}>This is permanent and cannot be undone.</p>
+              <div style={{ display: 'flex', gap: 6 }}>
+                <button
+                  onClick={() => setShowDeleteConfirm(false)}
+                  disabled={deleteLoading}
+                  style={{
+                    flex: 1, padding: '6px', background: 'transparent',
+                    border: '1px solid rgba(255,255,255,0.15)', borderRadius: 5,
+                    color: 'rgba(255,255,255,0.5)', fontSize: 10, cursor: 'pointer',
+                    fontFamily: 'Inter, sans-serif',
+                  }}
+                >Cancel</button>
+                <button
+                  onClick={async () => {
+                    setDeleteLoading(true);
+                    try {
+                      const res = await fetch(`${API_URL}/api/v2/auth/me`, {
+                        method: 'DELETE',
+                        headers: { 'Authorization': `Bearer ${token || localStorage.getItem('coastguard_token')}` }
+                      });
+                      if (res.ok) {
+                        logout();
+                      } else {
+                        const d = await res.json();
+                        alert(d.detail || 'Failed to delete account.');
+                        setShowDeleteConfirm(false);
+                      }
+                    } catch {
+                      alert('Network error. Please try again.');
+                      setShowDeleteConfirm(false);
+                    } finally {
+                      setDeleteLoading(false);
+                    }
+                  }}
+                  disabled={deleteLoading}
+                  style={{
+                    flex: 1, padding: '6px', background: '#dc2626',
+                    border: 'none', borderRadius: 5,
+                    color: 'white', fontSize: 10, cursor: deleteLoading ? 'not-allowed' : 'pointer',
+                    fontWeight: 700, fontFamily: 'Inter, sans-serif',
+                  }}
+                >{deleteLoading ? '...' : 'Delete'}</button>
+              </div>
+            </div>
+          )}
         </div>
       )}
 

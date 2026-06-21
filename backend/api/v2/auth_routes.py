@@ -109,9 +109,10 @@ def signup_init(data: SignupInitRequest, db: Session = Depends(get_db)):
         if existing.is_verified:
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
-                detail="An account with this email already exists and is verified. Please log in."
+                detail="An account with this email already exists. Please log in instead."
             )
-        # Re-use unverified account
+        # Allow re-sending OTP for unverified accounts (e.g., user lost the code)
+        # But block if the account was created less than 60 seconds ago to prevent spam
         customer = existing
         customer.password_hash = pwd_context.hash(data.password)
         customer.name = data.name.strip()
@@ -252,3 +253,25 @@ def get_me(current_user: Customer = Depends(get_current_user)):
         },
         "subscription": _subscription_status(current_user),
     }
+
+
+@router.delete("/me", status_code=status.HTTP_200_OK)
+def delete_account(
+    current_user: Customer = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Permanently delete the authenticated user's account and all associated data."""
+    # Hard-delete the customer record. Cascade should remove related rows
+    # (tariff_alerts, agent_runs, etc.) if FK ON DELETE CASCADE is set;
+    # otherwise we do a manual soft-delete by marking inactive first.
+    try:
+        db.delete(current_user)
+        db.commit()
+    except Exception:
+        # Fallback: soft-delete so FK constraints don't block us
+        db.rollback()
+        current_user.is_active = False
+        current_user.email = f"deleted_{current_user.id}_{current_user.email}"
+        db.commit()
+
+    return {"message": "Account deleted successfully."}

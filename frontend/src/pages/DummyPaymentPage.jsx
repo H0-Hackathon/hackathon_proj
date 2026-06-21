@@ -33,22 +33,22 @@ export default function DummyPaymentPage() {
           },
           body: JSON.stringify({ plan_id: `${planId}-${billing}` })
         });
-        
+
         if (res.status === 401) {
-          throw new Error("Session expired. Please log in again.");
+          throw new Error('Session expired. Please log in again.');
         }
-        
+
         const data = await res.json();
-        if (!res.ok) throw new Error(data.detail || "Failed to initialize payment");
-        
+        if (!res.ok) throw new Error(typeof data.detail === 'string' ? data.detail : 'Failed to initialize payment');
+
         setClientSecret(data.clientSecret);
       } catch (err) {
-        setError(err.message);
+        setError(err.message || 'Failed to connect to payment service.');
       } finally {
         setLoading(false);
       }
     }
-    
+
     initPayment();
   }, [planId, billing, token]);
 
@@ -100,10 +100,11 @@ export default function DummyPaymentPage() {
           </div>
         ) : clientSecret ? (
           <Elements stripe={stripePromise} options={{ clientSecret, appearance: { theme: 'night', variables: { colorPrimary: '#F59E0B', colorBackground: '#111827', colorText: '#ffffff' } } }}>
-            <CheckoutForm 
-              amount={amount} 
-              onSuccess={handlePaymentSuccess} 
-              onCancel={() => navigate('/subscription')} 
+            <CheckoutForm
+              amount={amount}
+              planId={`${planId}-${billing}`}
+              onSuccess={handlePaymentSuccess}
+              onCancel={() => navigate('/subscription')}
             />
           </Elements>
         ) : null}

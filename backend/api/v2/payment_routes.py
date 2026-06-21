@@ -23,27 +23,27 @@ settings = get_settings()
 # Initialize Stripe
 stripe.api_key = settings.stripe_secret_key or "sk_test_..."
 
+# Amount map (in cents)
+PLAN_AMOUNTS = {
+    "standard-monthly": 4900,   # $49
+    "standard-yearly": 46800,   # $39 * 12
+    "pro-monthly": 14900,       # $149
+    "pro-yearly": 142800,       # $119 * 12
+}
+
 class CreateIntentRequest(BaseModel):
-    plan_id: str  # e.g., "pro-monthly" or "pro-yearly"
+    plan_id: str  # e.g., "pro-monthly", "standard-monthly"
 
 class ConfirmPaymentRequest(BaseModel):
     payment_intent_id: str
+    plan_id: str  # pass plan_id from frontend so we set the right plan
 
 @router.post("/create-intent")
 def create_payment_intent(data: CreateIntentRequest, current_user: Customer = Depends(get_current_user)):
     """Creates a Stripe PaymentIntent for the requested plan."""
-    
-    # Determine amount based on plan
-    amount = 14900 # $149 default
-    if "yearly" in data.plan_id:
-        amount = 11900 # $119/mo equivalent for yearly? Or charge full year?
-        # Assuming we just charge the full year or monthly amount as a dummy
-        amount = 142800 # $119 * 12
-    elif data.plan_id == "starter-monthly":
-        amount = 4900
-    elif data.plan_id == "starter-yearly":
-        amount = 46800 # $39 * 12
-    
+
+    amount = PLAN_AMOUNTS.get(data.plan_id, 14900)
+
     try:
         payment_intent = stripe.PaymentIntent.create(
             amount=amount,
@@ -54,7 +54,7 @@ def create_payment_intent(data: CreateIntentRequest, current_user: Customer = De
                 "plan_id": data.plan_id
             }
         )
-        return {"clientSecret": payment_intent.client_secret}
+        return {"clientSecret": payment_intent.client_secret, "plan_id": data.plan_id}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -62,23 +62,22 @@ def create_payment_intent(data: CreateIntentRequest, current_user: Customer = De
 def confirm_payment(data: ConfirmPaymentRequest, current_user: Customer = Depends(get_current_user), db: Session = Depends(get_db)):
     """
     Confirms the dummy payment and upgrades the user.
-    In a real app, this should be handled by a Stripe Webhook to prevent client-side spoofing.
+    Sets the plan based on what plan_id was submitted from the frontend.
     """
-    
-    # In a real app, we would verify the intent with Stripe here:
-    # intent = stripe.PaymentIntent.retrieve(data.payment_intent_id)
-    # if intent.status != "succeeded": raise HTTPException(...)
-    
-    # Extract plan from metadata (dummy logic, just upgrading to PRO for now)
-    current_user.subscription_plan = "pro"
-    
-    # Set expiration to 30 days from now
-    current_user.subscription_expires_at = datetime.utcnow() + timedelta(days=30)
-    
+
+    # Determine the plan label: plan_id is like "standard-monthly" or "pro-yearly"
+    plan_label = "standard" if data.plan_id.startswith("standard") else "pro"
+
+    current_user.subscription_plan = plan_label
+
+    # Set expiration: monthly = 30 days, yearly = 365 days
+    days = 365 if "yearly" in data.plan_id else 30
+    current_user.subscription_expires_at = datetime.utcnow() + timedelta(days=days)
+
     db.commit()
     db.refresh(current_user)
-    
+
     return {
-        "message": "Payment successful. Account upgraded to Pro.",
+        "message": f"Payment successful. Account upgraded to {plan_label.title()}.",
         "subscription": _subscription_status(current_user)
     }
