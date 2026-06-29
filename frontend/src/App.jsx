@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { ConfigProvider } from 'antd';
 import enUS from 'antd/locale/en_US';
 import { Toaster } from 'sonner';
@@ -13,6 +13,7 @@ import { AdminPage } from './pages/AdminPage';
 import SettingsPage from './pages/SettingsPage';
 import SubscriptionPage from './pages/SubscriptionPage';
 import OnboardingPage from './pages/OnboardingPage';
+import { LandingPage } from './pages/LandingPage';
 import { Logo } from './components/common/Logo';
 import { applyAppearance, loadCachedAppearance, cacheAppearance, DEFAULT_APPEARANCE } from './lib/appearance';
 
@@ -21,7 +22,6 @@ import {
   SignIn,
   SignedIn,
   SignedOut,
-  RedirectToSignIn,
   useAuth,
   useUser,
 } from '@clerk/clerk-react';
@@ -149,6 +149,7 @@ function AuthenticatedApp() {
 
 // ── Root ──────────────────────────────────────────────────────────────────────
 function AppRoutes() {
+  const navigate = useNavigate();
   return (
     <>
       <SignedIn>
@@ -157,6 +158,7 @@ function AppRoutes() {
 
       <SignedOut>
         <Routes>
+          <Route path="/" element={<LandingPage />} />
           <Route
             path="/sign-in/*"
             element={
@@ -165,12 +167,12 @@ function AppRoutes() {
                 alignItems: 'center', justifyContent: 'center',
                 background: 'linear-gradient(160deg,#16323A 0%,#285260 55%,#16323A 100%)',
               }}>
-                <Logo size={56} variant="splash" />
+                <Logo size={56} variant="splash" onClick={() => navigate('/')} />
                 <SignIn routing="path" path="/sign-in" afterSignInUrl="/" afterSignUpUrl="/" />
               </div>
             }
           />
-          <Route path="*" element={<RedirectToSignIn />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </SignedOut>
     </>

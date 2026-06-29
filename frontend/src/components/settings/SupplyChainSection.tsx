@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Globe2, AlertTriangle, MapPin } from 'lucide-react';
-import { SectionHeader, SettingsCard, FieldRow, SelectInput, TagInput, SaveButton } from './SettingsShared';
+import { SectionHeader, SettingsCard, FieldRow, SelectInput, TextInput, TagInput, SaveButton } from './SettingsShared';
 
 export interface SupplyChainSaveData {
   product_categories: string[];
@@ -8,6 +8,8 @@ export interface SupplyChainSaveData {
   risk_tolerance: string;
   import_region: string;
   rss_keywords: string[];
+  destination_country: string;
+  destination_port: string;
 }
 
 interface Props {
@@ -19,8 +21,33 @@ interface Props {
     risk_tolerance?: string;
     import_region?: string;
     rss_keywords?: string[];
+    destination_country?: string;
+    destination_port?: string;
   };
 }
+
+// Where shipments actually arrive — this is what anchors the dashboard
+// globe's HQ pin and the supplier-to-HQ trade routes, so it needs to be
+// editable after onboarding, not just set once at signup.
+const DEST_COUNTRIES = [
+  'United States', 'United Kingdom', 'Canada', 'Australia', 'Germany', 'France',
+  'Netherlands', 'Japan', 'South Korea', 'Singapore', 'UAE', 'India', 'Brazil',
+  'Mexico', 'Italy', 'Spain', 'Poland', 'Sweden', 'Switzerland', 'Belgium',
+];
+
+const PORTS_BY_COUNTRY: Record<string, string[]> = {
+  'United States': ['Port of Los Angeles', 'Port of Long Beach', 'Port of New York', 'Port of Seattle', 'Port of Houston', 'Port of Savannah', 'Port of Charleston'],
+  'United Kingdom': ['Port of Felixstowe', 'Port of Southampton', 'Port of London', 'Port of Liverpool'],
+  'Germany': ['Port of Hamburg', 'Port of Bremen'],
+  'Netherlands': ['Port of Rotterdam'],
+  'Japan': ['Port of Tokyo', 'Port of Yokohama', 'Port of Osaka'],
+  'Australia': ['Port of Melbourne', 'Port of Sydney', 'Port of Brisbane'],
+  'Canada': ['Port of Vancouver', 'Port of Montreal', 'Port of Halifax'],
+  'Singapore': ['Port of Singapore'],
+  'UAE': ['Port of Jebel Ali', 'Port of Dubai'],
+  'India': ['Port of Mumbai', 'Port of Chennai', 'Port of Nhava Sheva'],
+  'France': ['Port of Le Havre', 'Port of Marseille'],
+};
 
 const RISK_LEVELS = [
   { id: 'low',    label: 'Low',    color: 'var(--harbor)',       desc: 'Disruptions under 10% supply impact are acceptable' },
@@ -36,6 +63,8 @@ export const SupplyChainSection: React.FC<Props> = ({ onSave, saving, initialDat
     (initialData?.risk_tolerance as 'low' | 'medium' | 'high') ?? 'medium'
   );
   const [importRegion, setImportRegion] = useState(initialData?.import_region ?? 'asia-pacific');
+  const [destinationCountry, setDestinationCountry] = useState(initialData?.destination_country ?? '');
+  const [destinationPort, setDestinationPort] = useState(initialData?.destination_port ?? '');
 
   useEffect(() => {
     if (initialData) {
@@ -43,13 +72,25 @@ export const SupplyChainSection: React.FC<Props> = ({ onSave, saving, initialDat
       if (initialData.primary_origin_countries?.length) setSupplierCountries(initialData.primary_origin_countries);
       if (initialData.risk_tolerance) setRiskTolerance(initialData.risk_tolerance as 'low' | 'medium' | 'high');
       if (initialData.import_region)  setImportRegion(initialData.import_region);
+      if (initialData.destination_country) setDestinationCountry(initialData.destination_country);
+      if (initialData.destination_port)    setDestinationPort(initialData.destination_port);
     }
   }, [
     initialData?.product_categories?.join(','),
     initialData?.primary_origin_countries?.join(','),
     initialData?.risk_tolerance,
     initialData?.import_region,
+    initialData?.destination_country,
+    initialData?.destination_port,
   ]);
+
+  const knownPorts = PORTS_BY_COUNTRY[destinationCountry] ?? [];
+
+  const handleDestinationCountryChange = (country: string) => {
+    setDestinationCountry(country);
+    const ports = PORTS_BY_COUNTRY[country];
+    setDestinationPort(ports?.length ? ports[0] : '');
+  };
 
   const handleSave = () => onSave({
     product_categories: productCategories,
@@ -57,6 +98,8 @@ export const SupplyChainSection: React.FC<Props> = ({ onSave, saving, initialDat
     risk_tolerance: riskTolerance,
     import_region: importRegion,
     rss_keywords: initialData?.rss_keywords ?? [],
+    destination_country: destinationCountry,
+    destination_port: destinationPort,
   });
 
   return (
@@ -93,10 +136,39 @@ export const SupplyChainSection: React.FC<Props> = ({ onSave, saving, initialDat
       </SettingsCard>
 
       <SettingsCard
+        title="Import Destination"
+        description="Where your shipments actually arrive — your HQ or primary distribution hub. Anchors the dashboard globe's HQ marker and every supplier-to-HQ trade route."
+        impact="Powers the globe's HQ pin and trade-route arcs"
+        index={1}
+      >
+        <FieldRow label="Destination Country" hint="Where goods clear customs and arrive">
+          <SelectInput value={destinationCountry} onChange={e => handleDestinationCountryChange(e.target.value)}>
+            <option value="">Select country…</option>
+            {DEST_COUNTRIES.map(c => <option key={c} value={c}>{c}</option>)}
+          </SelectInput>
+        </FieldRow>
+
+        <FieldRow label="Port / Hub" hint="Specific arrival port, if known">
+          {knownPorts.length > 0 ? (
+            <SelectInput value={destinationPort} onChange={e => setDestinationPort(e.target.value)}>
+              {knownPorts.map(p => <option key={p} value={p}>{p}</option>)}
+            </SelectInput>
+          ) : (
+            <TextInput
+              value={destinationPort}
+              onChange={e => setDestinationPort(e.target.value)}
+              placeholder="e.g. Port of Rotterdam"
+              disabled={!destinationCountry}
+            />
+          )}
+        </FieldRow>
+      </SettingsCard>
+
+      <SettingsCard
         title="Supplier Countries"
         description="Countries where your key suppliers are based. Drives geopolitical risk scoring and tariff monitoring."
         impact="Directly maps to tariff watch-list and sanctions screening"
-        index={1}
+        index={2}
       >
         <FieldRow label="Countries" hint="Press Enter or comma to add" full>
           <TagInput tags={supplierCountries} onChange={setSupplierCountries} placeholder="e.g. China, Vietnam, Germany…" />
@@ -123,7 +195,7 @@ export const SupplyChainSection: React.FC<Props> = ({ onSave, saving, initialDat
         title="Critical Sourcing Regions"
         description="High-priority geographic zones where any disruption triggers immediate alerts regardless of severity."
         impact="Bypasses severity filters — always generates alerts"
-        index={2}
+        index={3}
       >
         <FieldRow label="Regions" hint="Geopolitical hotspots, choke points" full>
           <TagInput tags={criticalRegions} onChange={setCriticalRegions} placeholder="e.g. Strait of Malacca, Red Sea, Taiwan Strait…" />
@@ -143,7 +215,7 @@ export const SupplyChainSection: React.FC<Props> = ({ onSave, saving, initialDat
         title="Risk Tolerance"
         description="Determines the sensitivity of the AI risk engine. Higher tolerance means fewer, higher-confidence alerts."
         impact="Controls alert volume and AI recommendation aggressiveness"
-        index={3}
+        index={4}
       >
         <div style={{ display: 'flex', gap: 12, marginTop: 4 }}>
           {RISK_LEVELS.map(({ id, label, color, desc }) => {

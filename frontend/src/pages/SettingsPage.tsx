@@ -25,6 +25,8 @@ interface SettingsData {
   import_region: string;
   risk_tolerance: string;
   rss_keywords: string[];
+  destination_country: string;
+  destination_port: string;
   alert_preferences?: Partial<AlertPreferences> | null;
   appearance_preferences?: Partial<AppearancePrefs> | null;
 }
@@ -91,6 +93,8 @@ export const SettingsPage: React.FC = () => {
     import_region: d.import_region,
     risk_tolerance: d.risk_tolerance,
     rss_keywords: d.rss_keywords,
+    destination_country: d.destination_country,
+    destination_port: d.destination_port,
   });
   const handleAccountSave  = (d: AccountSaveData)     => patch({ name: d.name });
   const handleAlertSave    = (d: AlertPreferences)    => patch({ alert_preferences: d });
@@ -195,6 +199,8 @@ export const SettingsPage: React.FC = () => {
                     import_region: data?.import_region,
                     risk_tolerance: data?.risk_tolerance,
                     rss_keywords: data?.rss_keywords,
+                    destination_country: data?.destination_country,
+                    destination_port: data?.destination_port,
                   }}
                 />
               )}

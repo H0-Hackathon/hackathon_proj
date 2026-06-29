@@ -1,6 +1,7 @@
 import React, { useRef, useEffect, useState, useCallback, useMemo } from 'react';
 import Globe, { GlobeMethods } from 'react-globe.gl';
 import * as THREE from 'three';
+import { ChevronDown, Radio } from 'lucide-react';
 import { PALETTE } from '../styles/palette';
 
 // ─── Data ─────────────────────────────────────────────────────────────────────
@@ -91,6 +92,10 @@ export interface TradeGlobeProps {
   alternateSuppliers?: TradeGlobeAlternateSupplier[];
   /** Settings → Appearance → "Globe Auto-Rotation". Defaults on. */
   autoRotateEnabled?: boolean;
+  /** Marketing/demo embed (e.g. the landing page hero) — hides the legend and
+   *  the click-to-expand detail panel so the globe reads cleanly at small
+   *  sizes, while keeping rotation, hover, and the ripple fully live. */
+  compact?: boolean;
 }
 
 export const TradeGlobe: React.FC<TradeGlobeProps> = ({
@@ -99,6 +104,7 @@ export const TradeGlobe: React.FC<TradeGlobeProps> = ({
   hqLocation = null,
   alternateSuppliers = [],
   autoRotateEnabled = true,
+  compact = false,
 }) => {
   const globeRef = useRef<GlobeMethods | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -106,6 +112,8 @@ export const TradeGlobe: React.FC<TradeGlobeProps> = ({
   const [hoveredSupplier, setHoveredSupplier] = useState<Supplier | null>(null);
   const [selectedSupplier, setSelectedSupplier] = useState<Supplier | null>(null);
   const [tooltipPos, setTooltipPos] = useState<{ x: number; y: number } | null>(null);
+  const [eventMenuOpen, setEventMenuOpen] = useState(false);
+  const [selectedEventIdx, setSelectedEventIdx] = useState(0);
   // One aggregated point per country (not per supplier) — ~100-150 rows for
   // the ambient background layer, since the underlying directory has no
   // per-supplier lat/lng and geocoding 25k rows individually isn't viable.
@@ -229,13 +237,28 @@ export const TradeGlobe: React.FC<TradeGlobeProps> = ({
     }
 
     setTimeout(() => {
-      globe.pointOfView({ lat: 20, lng: -20, altitude: 2.2 }, 1500);
+      globe.pointOfView({ lat: 20, lng: -20, altitude: compact ? 1.7 : 2.2 }, 1500);
     }, 100);
-  }, [autoRotateEnabled]);
+  }, [autoRotateEnabled, compact]);
 
+  // The globe's event picker only ever offers the 3 most recent disruptions
+  // (backend already returns them newest-first).
+  const recentEvents = useMemo(() => disruptions.slice(0, 3), [disruptions]);
+
+  // Clamp selection back to the latest event whenever the underlying list
+  // changes shape (e.g. a fresh pipeline run adds a new event).
+  useEffect(() => {
+    setSelectedEventIdx(0);
+  }, [disruptions.length]);
+
+  const selectedEvent = recentEvents[selectedEventIdx] ?? recentEvents[0] ?? null;
+
+  // Whichever event is currently selected on the globe determines which of
+  // this customer's own suppliers render as "impacted" — switching events
+  // in the picker re-flags suppliers to match.
   const affectedCodes = useMemo(
-    () => new Set(disruptions.flatMap((d) => (d.countries_affected ?? []).map(c => c.toUpperCase()))),
-    [disruptions]
+    () => new Set((selectedEvent?.countries_affected ?? []).map((c) => c.toUpperCase())),
+    [selectedEvent]
   );
 
   const effectiveSuppliers = useMemo<Supplier[]>(() => {
@@ -289,22 +312,20 @@ export const TradeGlobe: React.FC<TradeGlobeProps> = ({
   }, [suppliers, alternateSuppliers, hqLocation, affectedCodes]);
 
   // Ambient background layer — one point per exporter-directory country
-  // (already aggregated server-side), coloured green/red based on disruptions.
+  // (already aggregated server-side). These represent the general healthy
+  // supplier landscape, not this customer's own exposed supply chain, so
+  // they always render green regardless of where a disruption is occurring.
   const bgPoints = useMemo(() => {
-    return globalDensity.map((d: any) => {
-      const risk = (d.countryCode && affectedCodes.has(d.countryCode.toUpperCase())) ||
-                   (d.country && affectedCodes.has(d.country.toUpperCase()));
-      return {
-        ...d,
-        lat: d.latitude,
-        lng: d.longitude,
-        riskScore: risk ? 80 : 50,
-        exposure: '—',
-        exposureTier: (risk ? 3 : 1) as Supplier['exposureTier'],
-        status: (risk ? 'impacted' : 'healthy') as Supplier['status'],
-      };
-    });
-  }, [globalDensity, affectedCodes]);
+    return globalDensity.map((d: any) => ({
+      ...d,
+      lat: d.latitude,
+      lng: d.longitude,
+      riskScore: 20,
+      exposure: '—',
+      exposureTier: 1 as Supplier['exposureTier'],
+      status: 'healthy' as Supplier['status'],
+    }));
+  }, [globalDensity]);
 
   // Baseline: arcs from every main supplier to HQ. After a pipeline run finds
   // alternatives, swap to arcs from the alternate supplier(s) to HQ instead —
@@ -324,26 +345,26 @@ export const TradeGlobe: React.FC<TradeGlobeProps> = ({
     }));
   }, [effectiveSuppliers, hqLocation, alternateSuppliers]);
 
-  // Points for the news events (disruptions) so they visually appear on the map cities
-  const disruptionMarkers = useMemo(() => {
-    return disruptions
-      .filter((d) => d.latitude != null && d.longitude != null)
-      .map((d) => ({
-        ...d,
-        lat: d.latitude!,
-        lng: d.longitude!,
-      }));
-  }, [disruptions]);
+  // Whichever event is selected in the top-left picker is the only one that
+  // gets the big ripple; everything else on the globe is a static labeled dot.
+  const eventPoint = useMemo(() => {
+    const d = selectedEvent;
+    if (!d || d.latitude == null || d.longitude == null) return null;
+    return { ...d, lat: d.latitude, lng: d.longitude, isDisruption: true };
+  }, [selectedEvent]);
 
-  // Only the user's own suppliers + customer destination get rings / labels / arcs
+  // Fly the camera to whichever event is selected so switching in the picker
+  // is visually obvious even if the event is on the far side of the globe.
+  useEffect(() => {
+    if (!eventPoint || !globeRef.current) return;
+    globeRef.current.pointOfView({ lat: eventPoint.lat, lng: eventPoint.lng, altitude: compact ? 1.7 : 1.8 }, 1200);
+  }, [eventPoint, compact]);
+
+  // Only the user's own suppliers + customer destination get labels / arcs
   // The 22k global blob is too large for interactive hover
   const interactivePoints = useMemo(() => effectiveSuppliers, [effectiveSuppliers]);
   const arcsData = useMemo(() => effectiveArcs, [effectiveArcs]);
 
-  const getBgPointColor = useCallback((d: any) =>
-    d.status === 'impacted' ? '#ff2a2a' : '#10b981', []);
-  const getPointRadius = useCallback((d: any) => (d.status === 'customer' ? 1.0 : 0.8), []);
-  const getPointColor = useCallback((d: any) => STATUS_COLOR[d.status as Supplier['status']], []);
   const getArcDashLength = useCallback((d: any) => (d.exposureTier === 3 ? 0.3 : 0.15), []);
   const getArcDashGap = useCallback((d: any) => (d.exposureTier === 3 ? 1.2 : 2.5), []);
 
@@ -378,31 +399,14 @@ export const TradeGlobe: React.FC<TradeGlobeProps> = ({
         atmosphereColor={PALETTE.seafoam}
         atmosphereAltitude={0.15}
         
-        // ── (Removed the old pointsData lines; rendering bgPoints as labels/rings instead) ──
-
-        // ── Interactive user suppliers & 100 random suppliers (rings, hover, labels) ──────────────
-        // Use ringsData for the suppliers
-        ringsData={[...interactivePoints, ...bgPoints, ...disruptionMarkers.map(d => ({ ...d, isDisruption: true }))]}
+        // ── The one selected disruption — the only thing on the globe that ripples ──
+        ringsData={eventPoint ? [eventPoint] : []}
         ringLat={(d: any) => d.lat}
         ringLng={(d: any) => d.lng}
-        ringColor={(d: any) => d.isDisruption ? 'rgba(255,50,50,0.9)' : STATUS_COLOR[d.status as Supplier['status']]}
-        ringMaxRadius={(d: any) => d.isDisruption ? 10 : (d.status === 'impacted' ? 5 : (d.status === 'customer' ? 3.5 : 2))}
-        ringPropagationSpeed={(d: any) => d.isDisruption ? 5 : (d.status === 'impacted' ? 3.5 : 1.5)}
-        ringRepeatPeriod={(d: any) => d.isDisruption ? 500 : (d.status === 'impacted' ? 700 : 1800)}
-        onRingHover={(ring: any) => {
-          setHoveredSupplier(ring || null);
-          if (globeRef.current) {
-            const controls = globeRef.current.controls() as any;
-            if (controls) controls.autoRotate = autoRotateEnabled && !ring && !selectedSupplier;
-          }
-        }}
-        onRingClick={(ring: any) => {
-          setSelectedSupplier(ring);
-          if (globeRef.current) {
-            const controls = globeRef.current.controls() as any;
-            if (controls) controls.autoRotate = autoRotateEnabled && !ring && !hoveredSupplier;
-          }
-        }}
+        ringColor={() => 'rgba(255,50,50,0.9)'}
+        ringMaxRadius={10}
+        ringPropagationSpeed={5}
+        ringRepeatPeriod={500}
         // ── Trade exposure arcs (from live suppliers → destination) ──────
         arcsData={arcsData}
         arcStartLat={(d: any) => d.startLat}
@@ -417,17 +421,26 @@ export const TradeGlobe: React.FC<TradeGlobeProps> = ({
         arcDashAnimateTime={(d: any) => ARC_DASH_SPEED[d.exposureTier as Arc['exposureTier']]}
         arcCurveResolution={64}
 
-        // ── Labels (for both active chain and 100 random suppliers) ───────────
-        labelsData={[...interactivePoints, ...bgPoints]}
+        // ── Labels (active chain, ambient directory, and the selected event) ──
+        labelsData={[...interactivePoints, ...bgPoints, ...(eventPoint ? [eventPoint] : [])]}
         labelLat={(d: any) => d.lat}
         labelLng={(d: any) => d.lng}
-        labelText={(d: any) => d.name}
+        labelText={(d: any) => {
+          if (d.isDisruption) {
+            const country = d.countries_affected?.[0] || d.location_name || 'Unknown';
+            return `${country} — Event`;
+          }
+          if (!d.name) return d.country || ''; // aggregate ambient country point, not a named supplier
+          if (d.status === 'customer') return d.name;
+          return `${d.name} — ${d.status === 'alternative' ? 'Alt. Supplier' : 'Supplier'}`;
+        }}
         labelSize={1.8}
         labelDotRadius={0.5}
-        labelColor={(d: any) => STATUS_COLOR[d.status as Supplier['status']]}
+        labelColor={(d: any) => (d.isDisruption ? PALETTE.critical : STATUS_COLOR[d.status as Supplier['status']])}
         labelAltitude={0.025}
         labelResolution={4}
         onLabelClick={(point: any) => {
+          if (compact || point?.isDisruption) return; // the detail panel is supplier-shaped; skip events & small embeds
           setSelectedSupplier(point);
           if (globeRef.current) {
             const controls = globeRef.current.controls() as any;
@@ -435,7 +448,7 @@ export const TradeGlobe: React.FC<TradeGlobeProps> = ({
           }
         }}
         onLabelHover={(point: any) => {
-          setHoveredSupplier(point || null);
+          setHoveredSupplier(point && !point.isDisruption ? point : null);
           if (globeRef.current) {
             const controls = globeRef.current.controls() as any;
             if (controls) controls.autoRotate = autoRotateEnabled && !point && !selectedSupplier;
@@ -443,8 +456,89 @@ export const TradeGlobe: React.FC<TradeGlobeProps> = ({
         }}
       />
 
+      {/* ── Event picker (top-left) ── */}
+      {!compact && (
+        <div
+          style={{
+            position: 'absolute',
+            top: 16,
+            left: 16,
+            zIndex: 20,
+            background: 'rgba(22,50,58,0.88)',
+            backdropFilter: 'blur(14px)',
+            border: '1px solid var(--border-soft)',
+            borderRadius: 10,
+            padding: '10px 12px',
+            fontFamily: 'var(--font)',
+            minWidth: 210,
+            maxWidth: 270,
+          }}
+        >
+          <div
+            onClick={() => recentEvents.length > 0 && setEventMenuOpen((o) => !o)}
+            style={{
+              display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10,
+              cursor: recentEvents.length > 0 ? 'pointer' : 'default',
+            }}
+          >
+            <div style={{ minWidth: 0 }}>
+              <div style={{
+                display: 'flex', alignItems: 'center', gap: 6, fontSize: 9.5, fontWeight: 700,
+                letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 4,
+              }}>
+                <Radio size={10} color={PALETTE.critical} /> Active Event
+              </div>
+              <div style={{
+                fontSize: 12.5, fontWeight: 600, color: 'var(--foreground)',
+                overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+              }}>
+                {selectedEvent ? selectedEvent.title : 'No recent events'}
+              </div>
+              {selectedEvent && (
+                <div style={{ fontSize: 10.5, color: 'var(--text-secondary)', marginTop: 2 }}>
+                  {selectedEvent.countries_affected?.[0] || selectedEvent.location_name || ''}
+                </div>
+              )}
+            </div>
+            {recentEvents.length > 0 && (
+              <ChevronDown
+                size={14}
+                color="var(--text-muted)"
+                style={{ flexShrink: 0, marginTop: 2, transform: eventMenuOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s ease-out' }}
+              />
+            )}
+          </div>
+
+          {eventMenuOpen && recentEvents.length > 0 && (
+            <div style={{ marginTop: 10, paddingTop: 10, borderTop: '1px solid var(--border-soft)', display: 'flex', flexDirection: 'column', gap: 4 }}>
+              {recentEvents.map((d, i) => (
+                <button
+                  key={d.incident_id}
+                  onClick={() => { setSelectedEventIdx(i); setEventMenuOpen(false); }}
+                  style={{
+                    textAlign: 'left', padding: '7px 8px', borderRadius: 7, border: 'none', cursor: 'pointer',
+                    background: i === selectedEventIdx ? 'rgba(132,215,216,0.12)' : 'transparent',
+                    fontFamily: 'var(--font)', transition: 'background 0.15s ease-out',
+                  }}
+                >
+                  <div style={{
+                    fontSize: 12, fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+                    color: i === selectedEventIdx ? 'var(--seafoam)' : 'var(--foreground)',
+                  }}>
+                    {d.title}
+                  </div>
+                  <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 1 }}>
+                    {d.countries_affected?.[0] || d.location_name || ''}
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* ── Legend ── */}
+      {!compact && (
       <div
         style={{
           position: 'absolute',
@@ -543,9 +637,10 @@ export const TradeGlobe: React.FC<TradeGlobeProps> = ({
             letterSpacing: '0.02em',
           }}
         >
-          Pulse speed = financial exposure velocity
+          Red ripple marks the selected event's location
         </div>
       </div>
+      )}
 
       {/* ── Hover tooltip ── */}
       {hoveredSupplier && (
